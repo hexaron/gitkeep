@@ -1,0 +1,137 @@
+#!/usr/bin/env python
+
+import sys
+import os
+from pathlib import Path
+
+######
+# Help
+######
+
+def help():
+    print("""\
+Automaticlly add and remove .gitkeep files for tracking empty directories with
+git.
+
+Usage: gitkeep [OPTIONS] [DIRECTORY]
+
+Notes:
+By default all directories starting with "." will be ignored.
+
+Options:
+-a, --all   Include directories starting with ".".
+-d, --dry   Run in dry mode, i.e. only print the canges instead of performing
+            them.
+-f, --force Run the script even on maybe large directories.
+-h, --help  Display this help message.""")
+
+def error(message="generic error."):
+    # stlye:      01 = Bold,
+    # foreground: 39 = Fallback to default,
+    # background: 41 = Red.
+    # see:
+    #   https://opensource.com/article/19/9/linux-terminal-colors
+    WARNING = "\x1b[01;39;41m"
+    ENDCOLOR = "\x1b[0m"
+
+    help()
+    print()
+    print(WARNING + "Error:" + ENDCOLOR)
+    print(message)
+    exit()
+
+if ("-h" in sys.argv
+    or "--help" in sys.argv):
+    help()
+    exit()
+
+#########
+# Options
+#########
+
+# Default options
+ignore_hidden = True
+dry = False
+force = False
+rootdir = Path.cwd()
+
+for option in sys.argv[1:]:
+    if option in ["--all", "-a"]:
+        ignore_hidden = False
+    elif option in ["--dry", "-d"]:
+        dry = True
+    elif option in ["--force", "-f"]:
+        force = True
+    else:
+        if Path(option).is_dir():
+            rootdir = Path(option)
+        else:
+            error(f"Unrecognized option: '{option}'\n\"gitkeep --help\" gives more information.")
+
+if not force:
+    # Ignore the force warning when running in dry mode.
+    if not dry:
+        if str(rootdir).count("/") <= 3:
+            error(f"{rootdir} may be a large directory.\nUse -f or --force to run anyway.")
+
+##################
+# Helper functions
+##################
+
+def is_empty(d):
+    return not any(d.iterdir())
+
+def create_gitkeep(d):
+    if not dry:
+        open(str(d / ".gitkeep"), "a").close()
+
+    print("+", (d / ".gitkeep").relative_to(rootdir))
+
+def has_unnecessary_gitkeep(d):
+    # If it has the .gitkeep file
+    if (d / ".gitkeep").is_file():
+        try:
+            d_iterdir = d.iterdir()
+
+            next(d_iterdir)
+            next(d_iterdir)
+
+            return True
+        except StopIteration:
+            return False
+
+    return False
+
+def remove_gitkeep(d):
+    if not dry:
+        os.remove(str(d / ".gitkeep"))
+
+    print("-", (d / ".gitkeep").relative_to(rootdir))
+
+##############
+# Main program
+##############
+
+if dry:
+    print("Running gitkeep in dry mode.")
+
+# Queue of dirs to check.
+dir_queue = [rootdir]
+
+# Find all the empty dirs
+# and also unnecessary .gitkeep files.
+while len(dir_queue) > 0:
+    d = dir_queue.pop()
+
+    if ignore_hidden:
+        if d.name.startswith("."):
+            continue
+
+    if is_empty(d):
+        create_gitkeep(d)
+    else:
+        dir_queue += [f for f in d.glob("*") if f.is_dir()]
+
+        if has_unnecessary_gitkeep(d):
+            remove_gitkeep(d)
+
