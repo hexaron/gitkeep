@@ -68,6 +68,8 @@ for option in sys.argv[1:]:
         else:
             error(f"Unrecognized option: '{option}'\n\"gitkeep --help\" gives more information.")
 
+rootdir = rootdir.resolve()
+
 if not force:
     # Ignore the force warning when running in dry mode.
     if not dry:
