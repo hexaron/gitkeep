@@ -11,6 +11,20 @@ def CTRL_C_handler(sig, frame):
 
 signal.signal(signal.SIGINT, CTRL_C_handler)
 
+
+#############
+# ANSI Colors
+#############
+
+# see:
+#   https://opensource.com/article/19/9/linux-terminal-colors
+BOLD_WHITE_RED_BG = "\x1b[01;37;41m"
+BOLD_YELLOW_BG = "\x1b[01;33m"
+GREEN = "\x1b[32m"
+RED = "\x1b[31m"
+END_COLOR = "\x1b[0m"
+
+
 ######
 # Help
 ######
@@ -22,46 +36,30 @@ git.
 
 Usage: gitkeep [OPTIONS] [DIRECTORY]
 
-Notes:
+Note:
 By default all directories starting with "." will be ignored.
 
 Options:
--a, --all   Include directories starting with ".".
--d, --dry   Run in dry mode, i.e. only print the canges instead of performing
-            them.
--f, --force Run the script even on maybe large directories.
--h, --help  Display this help message.""")
+-a, --all    Include directories starting with ".".
+-d, --dry    Run in dry mode, i.e. only print the canges instead of performing
+             them.
+-f, --force  Run the script even on possibly large directories.
+-h, --help   Display this help message.""")
 
 def error(message="generic error."):
-    # style:      01 = Bold,
-    # foreground: 39 = Fallback to default,
-    # background: 41 = Red.
-    # see:
-    #   https://opensource.com/article/19/9/linux-terminal-colors
-    WARNING = "\x1b[01;39;41m"
-    ENDCOLOR = "\x1b[0m"
-
     help()
     print()
-    print(WARNING + "Error:" + ENDCOLOR)
-    print(message)
+    print(f"{BOLD_WHITE_RED_BG}Error{END_COLOR} {message}")
     sys.exit(1)
 
 def info(message):
-    # style:       01 = Bold,
-    # foreground:  40 = Black,
-    # background: 103 = Yellow.
-    # see `error`.
-    INFO = "\x1b[01;30;103m"
-    ENDCOLOR = "\x1b[0m"
-
-    print(INFO + "Info:" + ENDCOLOR)
-    print(message)
+    print(f"{BOLD_YELLOW_BG}Info{END_COLOR} {message}")
 
 if ("-h" in sys.argv
     or "--help" in sys.argv):
     help()
     sys.exit(0)
+
 
 #########
 # Options
@@ -94,6 +92,7 @@ if not force:
         if str(rootdir).count("/") <= 3:
             error(f"{rootdir} may be a large directory.\nUse -f or --force to run anyway.")
 
+
 ##################
 # Helper functions
 ##################
@@ -105,7 +104,7 @@ def create_gitkeep(d):
     if not dry:
         open(str(d / ".gitkeep"), "a").close()
 
-    print("+", (d / ".gitkeep").relative_to(rootdir))
+    print(f"{GREEN}+{(d / '.gitkeep').relative_to(rootdir)}{END_COLOR}")
 
 def has_unnecessary_gitkeep(d):
     # If it has the .gitkeep file
@@ -126,7 +125,8 @@ def remove_gitkeep(d):
     if not dry:
         os.remove(str(d / ".gitkeep"))
 
-    print("-", (d / ".gitkeep").relative_to(rootdir))
+    print(f"{RED}-{(d / '.gitkeep').relative_to(rootdir)}{END_COLOR}")
+
 
 ##############
 # Main program
@@ -150,7 +150,7 @@ while len(dir_queue) > 0:
     if is_empty(d):
         create_gitkeep(d)
     else:
-        dir_queue += [f for f in d.glob("*") if f.is_dir()]
+        dir_queue += [f for f in d.iterdir() if f.is_dir()]
 
         if has_unnecessary_gitkeep(d):
             remove_gitkeep(d)
