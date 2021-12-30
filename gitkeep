@@ -4,6 +4,13 @@ import sys
 import os
 from pathlib import Path
 
+import signal
+def CTRL_C_handler(sig, frame):
+    print()
+    sys.exit(1)
+
+signal.signal(signal.SIGINT, CTRL_C_handler)
+
 ######
 # Help
 ######
@@ -26,7 +33,7 @@ Options:
 -h, --help  Display this help message.""")
 
 def error(message="generic error."):
-    # stlye:      01 = Bold,
+    # style:      01 = Bold,
     # foreground: 39 = Fallback to default,
     # background: 41 = Red.
     # see:
@@ -38,12 +45,23 @@ def error(message="generic error."):
     print()
     print(WARNING + "Error:" + ENDCOLOR)
     print(message)
-    exit()
+    sys.exit(1)
+
+def info(message):
+    # style:       01 = Bold,
+    # foreground:  40 = Black,
+    # background: 103 = Yellow.
+    # see `error`.
+    INFO = "\x1b[01;30;103m"
+    ENDCOLOR = "\x1b[0m"
+
+    print(INFO + "Info:" + ENDCOLOR)
+    print(message)
 
 if ("-h" in sys.argv
     or "--help" in sys.argv):
     help()
-    exit()
+    sys.exit(0)
 
 #########
 # Options
@@ -115,7 +133,7 @@ def remove_gitkeep(d):
 ##############
 
 if dry:
-    print("Running gitkeep in dry mode.")
+    info("Running gitkeep in dry mode.")
 
 # Queue of dirs to check.
 dir_queue = [rootdir]
