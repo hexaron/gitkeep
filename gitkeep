@@ -19,7 +19,7 @@ signal.signal(signal.SIGINT, CTRL_C_handler)
 # see:
 #   https://opensource.com/article/19/9/linux-terminal-colors
 BOLD_WHITE_RED_BG = "\x1b[01;37;41m"
-BOLD_YELLOW_BG = "\x1b[01;33m"
+BOLD_YELLOW = "\x1b[01;33m"
 GREEN = "\x1b[32m"
 RED = "\x1b[31m"
 END_COLOR = "\x1b[0m"
