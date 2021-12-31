@@ -56,7 +56,7 @@ def error(message="generic error."):
     sys.exit(1)
 
 def info(message):
-    print(f"{BOLD_YELLOW_BG}Info{END_COLOR} {message}")
+    print(f"{BOLD_YELLOW}Info{END_COLOR} {message}")
 
 if ("-h" in sys.argv
     or "--help" in sys.argv):
