@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import sys
-import os
 from pathlib import Path
 
 import signal
@@ -106,7 +105,7 @@ def is_empty(d):
 
 def create_gitkeep(d):
     if not dry:
-        open(str(d / ".gitkeep"), "a").close()
+        (d / ".gitkeep").touch()
 
     print(f"{GREEN}+{(d / '.gitkeep').relative_to(rootdir)}{END_COLOR}")
 
@@ -127,7 +126,7 @@ def has_unnecessary_gitkeep(d):
 
 def remove_gitkeep(d):
     if not dry:
-        os.remove(str(d / ".gitkeep"))
+        (d / ".gitkeep").unlink()
 
     print(f"{RED}-{(d / '.gitkeep').relative_to(rootdir)}{END_COLOR}")
 
