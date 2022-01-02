@@ -39,10 +39,8 @@ Usage: gitkeep [OPTIONS] [DIRECTORY]
 
 Notes:
 By default DIRECTORY is the current working directory.
-By default all directories starting with "." will be ignored.
 
 Options:
-  -a, --all    Include subdirectories starting with ".".
   -d, --dry    Run in dry mode, i.e. only print the changes instead of
                performing them.
   -f, --force  Run the script even on possibly large directories.
@@ -68,15 +66,12 @@ if ("-h" in sys.argv
 #########
 
 # Default options
-ignore_hidden = True
 dry = False
 force = False
 rootdir = Path.cwd()
 
 for option in sys.argv[1:]:
-    if option in ["--all", "-a"]:
-        ignore_hidden = False
-    elif option in ["--dry", "-d"]:
+    if option in ["--dry", "-d"]:
         dry = True
     elif option in ["--force", "-f"]:
         force = True
@@ -145,10 +140,6 @@ dir_queue = [rootdir]
 # and unnecessary .gitkeep files.
 while len(dir_queue) > 0:
     d = dir_queue.pop()
-
-    if ignore_hidden:
-        if d.name.startswith("."):
-            continue
 
     if is_empty(d):
         create_gitkeep(d)
