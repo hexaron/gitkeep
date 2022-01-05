@@ -30,10 +30,8 @@ Usage: gitkeep [OPTIONS] [DIRECTORY]
 
 Notes:
 By default DIRECTORY is the current working directory.
-By default all directories starting with "." will be ignored.
 
 Options:
-  -a, --all    Include directories starting with ".".
   -d, --dry    Run in dry mode, i.e. only print the changes instead of
                performing them.
   -f, --force  Run the script even on possibly large directories.
