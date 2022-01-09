@@ -30,8 +30,13 @@ Usage: gitkeep [OPTIONS] [DIRECTORY]
 
 Notes:
 By default DIRECTORY is the current working directory.
+Directories ignored by git wont be checked. In particular ".gitkeep" files in
+ignored directories wont be deleted. (The only exception is, when DIRECTORY is
+explicitly set to be an ignored directory containing an unnecessary ".gitkeep"
+file.)
 
 Options:
+  --debug      Print python stack trace on error.
   -d, --dry    Run in dry mode, i.e. only print the changes instead of
                performing them.
   -f, --force  Run the script even on possibly large directories.
