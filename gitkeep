@@ -158,6 +158,11 @@ dir_queue = [rootdir]
 while len(dir_queue) > 0:
     d = dir_queue.pop()
 
+    # Git wont say that the ".git/" directory is actually ignored.
+    # Git ignores the ".git/" directory at any level see issue #3.
+    if d.name == ".git":
+        continue
+
     if is_empty(d):
         create_gitkeep(d)
     else:
@@ -198,10 +203,6 @@ while len(dir_queue) > 0:
                     )
                 else:
                     error(e.output.decode('utf-8')[:-1])
-
-        # Git wont say that the ".git" directory is actually ignored.
-        if d == Path.cwd():
-            ignored_directories.append(Path.cwd() / ".git/")
 
         dir_queue += [
             f for f in d.iterdir()
