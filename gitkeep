@@ -2,6 +2,7 @@
 
 import sys
 from pathlib import Path
+import subprocess
 
 import signal
 
@@ -16,7 +17,7 @@ signal.signal(signal.SIGINT, CTRL_C_handler)
 # ANSI Colors
 #############
 
-# see:
+# See:
 #   https://opensource.com/article/19/9/linux-terminal-colors
 BOLD_WHITE_RED_BG = "\x1b[01;37;41m"
 BOLD_YELLOW = "\x1b[01;33m"
@@ -30,7 +31,7 @@ END_COLOR = "\x1b[0m"
 ######
 
 def help():
-#                                                               max length --> |
+#                                                               Max length --> |
     print("""\
 Automatically add and remove .gitkeep files for tracking empty directories with
 git.
@@ -39,18 +40,28 @@ Usage: gitkeep [OPTIONS] [DIRECTORY]
 
 Notes:
 By default DIRECTORY is the current working directory.
+Directories ignored by git wont be checked. In particular ".gitkeep" files in
+ignored directories wont be deleted. (The only exception is, when DIRECTORY is
+explicitly set to be an ignored directory containing an unnecessary ".gitkeep"
+file.)
 
 Options:
+  --debug      Print python stack trace on error.
   -d, --dry    Run in dry mode, i.e. only print the changes instead of
                performing them.
   -f, --force  Run the script even on possibly large directories.
   -h, --help   Display this help message.""")
 
+debug = "--debug" in sys.argv
+
 def error(message="generic error."):
-    help()
-    print()
-    print(f"{BOLD_WHITE_RED_BG}Error{END_COLOR} {message}")
-    sys.exit(1)
+    if debug:
+        raise RuntimeError(message)
+    else:
+        help()
+        print()
+        print(f"{BOLD_WHITE_RED_BG}Error{END_COLOR} {message}")
+        sys.exit(1)
 
 def info(message):
     print(f"{BOLD_YELLOW}Info{END_COLOR} {message}")
@@ -71,7 +82,10 @@ force = False
 rootdir = Path.cwd()
 
 for option in sys.argv[1:]:
-    if option in ["--dry", "-d"]:
+    if option == "--debug":
+        # See above
+        pass
+    elif option in ["--dry", "-d"]:
         dry = True
     elif option in ["--force", "-f"]:
         force = True
@@ -88,7 +102,10 @@ if not force:
     # Ignore the force warning when running in dry mode.
     if not dry:
         if str(rootdir).count("/") <= 3:
-            error(f"{rootdir} may be a large directory.\nUse -f or --force to run anyway.")
+            error(
+                f"{rootdir} may be a large directory.\n"
+                f"Use -f or --force to run anyway."
+            )
 
 
 ##################
@@ -144,7 +161,52 @@ while len(dir_queue) > 0:
     if is_empty(d):
         create_gitkeep(d)
     else:
-        dir_queue += [f for f in d.iterdir() if f.is_dir()]
+        # Get the `ignored_directories` in `d` using git commands.
+        try:
+            ignored_directories = \
+                subprocess.check_output(
+                    (
+                        f"find {d.relative_to(Path.cwd())} -maxdepth 1 -type d"
+                        f" | git check-ignore --stdin"
+                    ),
+                    shell=True,
+                    stderr=subprocess.STDOUT  # Do not print errors in console
+                )
+
+            # Convert byte to string, split at new line and remove empty line.
+            ignored_directories = ignored_directories\
+                .decode("utf-8")\
+                .split("\n")[:-1]
+
+            ignored_directories = [
+                Path.cwd() / ignored_directory
+                for ignored_directory in ignored_directories
+            ]
+        except subprocess.CalledProcessError as e:
+            if e.output == b"":
+                # There is simply no directory in `d` that gets ignored.
+                ignored_directories = []
+            else:
+                # Something went wrong.
+                if debug:
+                    raise e from RuntimeError(
+                        f"\n"
+                        f"The command\n $ {e.cmd}\n"
+                        f"returned exit status {e.returncode} "
+                        f"and {BOLD_WHITE_RED_BG}error{END_COLOR}:\n"
+                        f"{e.output.decode('utf-8')[:-1]}"
+                    )
+                else:
+                    error(e.output.decode('utf-8')[:-1])
+
+        # Git wont say that the ".git" directory is actually ignored.
+        if d == Path.cwd():
+            ignored_directories.append(Path.cwd() / ".git/")
+
+        dir_queue += [
+            f for f in d.iterdir()
+            if f.is_dir() and not f in ignored_directories
+        ]
 
         if has_unnecessary_gitkeep(d):
             remove_gitkeep(d)
