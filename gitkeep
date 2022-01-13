@@ -206,7 +206,7 @@ while len(dir_queue) > 0:
 
         dir_queue += [
             f for f in d.iterdir()
-            if f.is_dir() and not f in ignored_directories
+            if f.is_dir() and not f.is_symlink() and not f in ignored_directories
         ]
 
         if has_unnecessary_gitkeep(d):
